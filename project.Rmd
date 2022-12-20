@@ -1,0 +1,746 @@
+---
+title: "Project"
+output:
+  pdf_document: default
+  html_document: default
+date: "2022-11-04"
+---
+
+```{r setup, include=FALSE}
+
+
+library(tidyverse)
+file <- "https://intro-datascience.s3.us-east-2.amazonaws.com/HMO_data.csv"
+file1 <- read_csv(file)
+str(file1)
+summary(file1)
+view(file1)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+library(tidyverse)
+file <- "https://intro-datascience.s3.us-east-2.amazonaws.com/HMO_data.csv"
+file1 <- read_csv(file)
+str(file1)
+summary(file1)
+#imported file and used structure and summary to understand data set
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+#checking for NA for data set
+#found that age, hypertension, and costs had NA
+sum(is.na(file1$x))
+sum(is.na(file1$age))
+sum(is.na(file1$bmi))
+sum(is.na(file1$children))
+sum(is.na(file1$smoker))
+sum(is.na(file1$location))
+sum(is.na(file1$location_type))
+sum(is.na(file1$education_level))
+sum(is.na(file1$yearly_physical))
+sum(is.na(file1$exercise))
+sum(is.na(file1$married))
+sum(is.na(file1$hypertension))
+sum(is.na(file1$gender))
+sum(is.na(file1$cost))
+
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+
+#creating new dataframes with NA values only
+
+bmiDF <- file1 %>%
+  filter(is.na(bmi))
+bmiDF
+
+hyperDF <- file1 %>%
+  filter(is.na(hypertension))
+hyperDF
+
+costDF <- file1 %>%
+  filter(is.na(cost))
+costDF
+
+
+```
+
+
+```{r}
+library(imputeTS)
+
+#will use interpolation to fill in gaps of BMI, Hyper, and cost columns
+file1$bmi <- na_interpolation(file1$bmi)
+file1$hypertension <- na_interpolation(file1$hypertension)
+file1$cost<- na_interpolation(file1$cost)
+
+#now to verify that we addressed all the N/A
+sum(is.na(file1$bmi))
+sum(is.na(file1$hypertension))
+sum(is.na(file1$cost))
+
+#and we did, woohoo!
+
+```
+
+```{r}
+#since we are predicting a value, will use linear regression first
+
+lmout <- lm(formula=cost~age+bmi+hypertension,data=file1)
+
+summary(lmout)
+#p-value for model, age, and bmi are less than 0.05 so they are statistically significant
+#adjusted R2 is 3.56% whic means that cost can only be explain 3.56% by age, bmi, and hypertension
+#hypertension is not a good predictor due to p-value > 0.05
+
+
+```
+
+```{r}
+#removed hypertension as a predictor to see if model output would improve
+
+lmout1 <- lm(formula=cost~age+bmi,data=file1)
+
+summary(lmout1)
+#p-value for model, age, and bmi are less than 0.05 so they are statistically significant
+#adjusted R2 is 3.56% whic means that cost can only be explain 3.56% by age, bmi, and hypertension
+#hypertension is not a good predictor due to p-value > 0.05
+```
+
+```{r}
+
+```
+
+
+
+```{r}
+
+
+library(tidyverse)
+
+#smoker yes is 1, smoker no is 0
+file1$smoker1 <- file1$smoker
+file1$smoker1<-ifelse(file1$smoker=="yes",1,0)
+
+#female is 1, male is 0
+file1$gender1 <- file1$gender
+file1$gender1<-ifelse(file1$gender=="female",1,0)
+
+#female is 1, male is 0
+file1$gender1 <- file1$gender
+file1$gender1<-ifelse(file1$gender=="female",1,0)
+
+#urban is 1, country is 0
+file1$location_type1 <- file1$location_type
+file1$location_type1<-ifelse(file1$location_type=="Urban",1,0)
+
+#active is 1, non-active is 0
+file1$exercise1 <- file1$exercise
+file1$exercise1<-ifelse(file1$exercise=="Active",1,0)
+
+#married is 1, not-married is 0
+file1$married1 <- file1$married
+file1$married1<-ifelse(file1$married=="Married",1,0)
+
+#getting a yearly physical is 1, no is 0
+file1$yearly_physical1 <- file1$yearly_physical
+file1$yearly_physical1<-ifelse(file1$yearly_physical=="Yes",1,0)
+
+#Creates a dummy variable for education_level. No college degree is the reference group.
+file1$Bachelor<-ifelse(file1$education_level=="Bachelor",1,0)
+file1$Masters<-ifelse(file1$education_level=="Master",1,0)
+file1$PhD<-ifelse(file1$education_level=="PhD",1,0)
+
+#Creates a dummy variable for location. New York is the reference group.
+file1$Connecticut<-ifelse(file1$location=="CONNECTICUT",1,0)
+file1$Maryland<-ifelse(file1$location=="MARYLAND",1,0)
+file1$Massachussetts<-ifelse(file1$location=="MASSACHUSETTS",1,0)
+file1$New_Jersey<-ifelse(file1$location=="NEW JERSEY",1,0)
+file1$Pennsylvania<-ifelse(file1$location=="PENNSYLVANIA",1,0)
+file1$Rhode_Island<-ifelse(file1$location=="RHODE ISLAND",1,0)
+
+head(file1,4)
+
+
+
+```
+
+```{r}
+#Creates a file with the cleaned data that we will use for the models
+filemodel <- file1[ , c("age", "bmi", "children", "hypertension", "cost", "smoker1", "gender1", "location_type1", "exercise1", "married1", "Bachelor", "Masters", "PhD", "Connecticut", "Maryland", "Massachussetts", "New_Jersey", "Pennsylvania", "Rhode_Island", "yearly_physical1")] 
+
+#First, we looked at a model that included all the variables. 
+lmFULL <- lm(formula = cost ~ ., data=filemodel)
+summary(lmFULL)
+#Adjusted R-squared of 0.5731.
+#Age, bmi, children, hypertension, smoker, exercise, married, and each of the states are all statistically significant. 
+
+
+library(car)
+vif(lmFULL)
+```
+
+```{r}
+#Created a final model with all of the statistically significant variables. 
+lmFinal <- lm(formula = cost ~ age + bmi + children + hypertension + smoker1 + exercise1 + married1 + Connecticut + Maryland + Massachussetts + New_Jersey + Pennsylvania + Rhode_Island , data=filemodel)
+summary(lmFinal)
+#The adjusted stayed the same at 0.573. 
+```
+
+
+```{r}
+library(caret)
+set.seed(110)
+trainList <- createDataPartition(y=filemodel$cost,p=.80,list=FALSE)
+#This creates the training dataset into a list using createdatapartition. 
+trainset <- filemodel[trainList, ]
+#This converts the list into a dataset called trainset. 
+testSet <- filemodel[-trainList, ]
+#This creates the testSet with the remaining data
+
+
+```
+
+```{r}
+#now to test with the HMO test data
+#using the test data set and will call it HMO test data set
+#imported the file using the files feature and import data set on top right (Environment)
+#selected it as an excel file
+
+
+#Test_HMO <- Test_HMO
+#HMO_solution <- HMO_solution
+
+
+
+
+```
+
+```{r}
+
+ggplot(file1)+aes(y=cost)+geom_histogram()
+quantile(file1$cost,prob=c(0.25,0.5,0.75))
+
+
+```
+
+```{r}
+library(tidyverse)
+
+#which state has the highest average cost
+groupstateDF <- file1 %>%
+  group_by(location) %>%
+  summarize(AvgCost=mean(cost),count=n(),TotalCosts=sum(cost)) %>%
+  arrange(desc(AvgCost))
+groupstateDF
+#created a summary table of average costs and count based on state
+#identified that connecticut had the highest average cost and pennsylvania had the largest count
+
+#which comparing average cost, total costs, and count based on exercise
+groupexerciseDF <- file1 %>%
+  group_by(exercise) %>%
+  summarize(AvgCost=mean(cost),count=n(),TotalCosts=sum(cost)) %>%
+  arrange(desc(AvgCost))
+groupexerciseDF
+
+
+
+
+#which comparing average cost, total costs, and count based on smoker
+groupsmokerDF <- file1 %>%
+  group_by(smoker) %>%
+  summarize(AvgCost=mean(cost),count=n(),TotalCosts=sum(cost)) %>%
+  arrange(desc(AvgCost))
+groupsmokerDF
+
+
+
+
+```
+
+```{r}
+
+#next created several box plots to visualize the data
+library(ggplot2)
+boxplot <- ggplot(file1)+aes(x=cost,y=location_type)+geom_boxplot()
+boxplot
+
+box_state <- ggplot(file1)+aes(x=cost,y=location)+geom_boxplot()
+box_state
+
+box_exercise <- ggplot(file1) + aes(x=cost,y=exercise)+geom_boxplot()
+box_exercise
+
+box_gender <- ggplot(file1) + aes(x=cost,y=gender)+geom_boxplot()
+box_gender
+
+box_married <- ggplot(file1) + aes(x=cost,y=married)+geom_boxplot()
+box_married
+
+box_education_level <- ggplot(file1) + aes(x=cost,y=education_level)+geom_boxplot()
+box_education_level
+
+box_physical <- ggplot(file1) + aes(x=cost,y=yearly_physical)+geom_boxplot()
+box_physical
+
+box_smoker <- ggplot(file1) + aes(x=cost,y=smoker)+geom_boxplot()
+box_smoker
+
+#did find that the average costs did vary by state as summarized in above table
+#furthermore, there are higher costs for active vs non-active individuals
+
+
+```
+
+```{r}
+
+#more visualizations
+
+scattor_age <- ggplot(file1) + aes(x=age,y=cost)+geom_point()+ggtitle("Age versus Costs")
+scattor_age
+
+scattor_bmi <- ggplot(file1) +aes(x=bmi,y=cost)+geom_point()+ggtitle("BMI versus Costs")
+scattor_bmi
+
+
+#looking at average costs
+bar_exercise1 <- ggplot(file1) + aes(x=exercise,y=cost)+geom_bar(position="dodge",stat="summary",fun="mean")+ggtitle("Average Costs based on Exercise")
+bar_exercise1
+
+bar_state1 <- ggplot(file1) + aes(x=location,y=cost)+geom_bar(position="dodge",stat="summary",fun="mean",fill="blue")+ggtitle("Average Costs based on State")
+bar_state1
+
+bar_marital1 <- ggplot(file1) + aes(x=married,y=cost)+geom_bar(position="dodge",stat="summary",fun="mean")+ggtitle("Average Costs based on Marital Status")
+bar_marital1
+
+bar_smoker1 <- ggplot(file1) + aes(x=smoker,y=cost)+geom_bar(position="dodge",stat="summary",fun="mean")+ggtitle("Average Costs based on Smoker Status")
+bar_smoker1
+
+bar_gender1 <- ggplot(file1) + aes(x=gender,y=cost)+geom_bar(position="dodge",stat="summary",fun="mean")+ggtitle("Average Costs based on Gender")
+bar_gender1
+
+#Now looking at total costs based on exervise, state, and marital status
+bar_exercise2 <- ggplot(file1) + aes(x=exercise,y=cost)+geom_bar(stat="identity")+ggtitle("Total Costs based on Exercise")
+bar_exercise2
+
+
+bar_state2 <- ggplot(file1) + aes(x=location,y=cost)+geom_bar(stat="identity",fill="blue")+ggtitle("Total Costs based on State")
+bar_state2
+
+bar_mar2 <- ggplot(file1) + aes(x=married,y=cost)+geom_bar(stat="identity",fill="blue")+ggtitle("Total Costs based on Marital Status")
+bar_mar2
+
+bar_smoker2 <- ggplot(file1) + aes(x=smoker,y=cost)+geom_bar(stat="identity",fill="blue")+ggtitle("Total Costs based on Smoker Status")
+bar_smoker2
+
+bar_gender2 <- ggplot(file1) + aes(x=gender,y=cost)+geom_bar(stat="identity",fill="blue")+ggtitle("Total Costs based on Gender")
+bar_gender2
+
+bar_education_level <- ggplot(file1) + aes(x=education_level,y=cost, fill = education_level)+ geom_bar(stat="identity")
+        bar_education_level
+
+bar_state <- ggplot(file1) + aes(x=location,y=cost, fill = location)+ geom_bar(stat="identity")
+        bar_state
+
+bar_state <- ggplot(file1) + aes(x=location,y=cost, fill = location)+ geom_bar(stat="identity")
+        bar_state
+
+
+
+```
+
+```{r}
+table(file1$smoker)
+table(file1$exercise)
+
+
+```
+
+
+
+
+```{r}
+
+#evaluating the data to deteremine where to create high and low cost boundaries for models
+summary(file1$cost)
+quantile(file1$cost,c(prob=0.25,0.5,0.75))
+file1$highcost <- as.factor(file1$cost >= 4775)
+file1$lowcost <- as.factor(file1$cost <= 970)
+
+table(file1$highcost)
+table(file1$lowcost)
+
+#assuming that high cost is top 25% and low cost is bottom 25%
+
+
+```
+
+```{r}
+
+#commented out certain steps below because they have already been done in the master code
+#Rule associative model 
+
+#install.packages("tidyverse")
+library(tidyverse)
+#file <- "https://intro-datascience.s3.us-east-2.amazonaws.com/HMO_data.csv"
+#file1 <- read_csv(file)
+#str(file1)
+#summary(file1)
+
+#using the rule association to understand which variables 
+#impact highcost of > 4700
+#install.packages("arules")
+#install.packages("arulesViz")
+library(arules) # access libraries of arules and arulesViz
+library(arulesViz)
+
+#4777 IS 75% QUARTILE
+#file1$highcost<- ifelse(file1$cost> 4775,"TRUE","FALSE")
+
+file3 <- file1
+#made a copy of file1 so we could convert to a transaction matrix
+file3 <- file3 %>% mutate_if(is.numeric,is.factor)
+str(file3)
+#used pipes to convert all numeric columns to factor columns
+
+fileTrans1 <- as(file3,"transactions")
+fileTrans1
+#creating transaction matrix called fileTrans from file2 dataframe
+
+#started out as 0.05 support and 0.57 confidence
+#increased support and confidence until results were 10-15
+rules <- apriori(fileTrans1,
+                 parameter=list(supp=0.06, conf=0.81),
+                 control=list(verbose=F),
+                 appearance=list(default="lhs",rhs=("highcost=TRUE")))
+itemFrequencyPlot(fileTrans1, topN=20)
+
+inspect(rules) 
+#inspectDT(rules)
+#comment out DT to be able to knit
+
+
+```
+
+
+
+
+
+```{r}
+
+#next, we use the rule association to understand which variables impact high costs of > $15k
+
+library(arules) # access libraries of arules and arulesViz
+library(arulesViz)
+
+
+file2 <- file1
+#made a copy of file1 so we could convert to a transaction matrix
+file2 <- file2 %>% mutate_if(is.numeric,is.factor)
+str(file2)
+#used pipes to convert all numeric columns to factor columns
+
+fileTrans <- as(file2,'transactions')
+
+#creating transaction matrix called fileTrans from file2 dataframe
+
+rules <- apriori(fileTrans,
+ parameter=list(supp=0.06, conf=0.81),
+ control=list(verbose=F),
+ appearance=list(default="lhs",rhs=("highcost=TRUE")))
+
+inspect(rules) 
+
+#reran the apriori function a few times to get results to 13-15 range
+#started with support of 0.005 and conf = 0.35 and had a large result list
+#increased support and confidence until we achieved 13-15 results
+#We can say with 65.2% confidence that a person who smokes, has a bachelors, and no physical will have costs > 15,000
+#used inspectDT to view results and sort based on lyft, then compared confidence
+
+```
+
+```{r}
+
+```
+
+
+
+```{r}
+
+library(rpart)
+library(dplyr)
+library(caret)
+
+set.seed(110)
+
+#will run the rpart model analysis in two separate chunks
+#the below chunk is just for the high cost data
+#the next chunk will focus on the low cost data
+
+
+# Create the test and train dataset, train data will be 70% of data
+
+rpartTrainList <- createDataPartition(y= file2$highcost,p=.08, list=FALSE)
+trainData <- file2[rpartTrainList,]
+testData <- file2[-rpartTrainList,]
+
+# Generate the rpart model
+
+trctrl <- trainControl(method="repeatedcv", number=10)
+
+#top 5 factors were smoker, physical, exercise, location_type, married, and education level
+
+model.rpart <- train(highcost ~ smoker+exercise+married+education_level+location_type+married+yearly_physical, data = trainData,method = "rpart",trControl=trctrl,tuneLength = 50)
+
+#now to test the model using the test data
+#evaluating results using the confusion matrix and varIMP to understand importance
+
+RpartOut <- predict(model.rpart,newdata=testData)
+confusionMatrix(RpartOut,testData$highcost)
+
+#using the varImp to understand which components are the most important to the model
+
+varImp(model.rpart)
+
+
+
+
+```
+
+
+```{r}
+
+
+#the next steps are to repeat the generation of the rpart treat but
+#with the low cost data with is the bottom quarter of the data set
+
+rpartTrainList_low <- createDataPartition(y= file2$lowcost,p=.07, list=FALSE)
+trainData_low <- file2[rpartTrainList_low,]
+testData_low <- file2[-rpartTrainList_low,]
+
+# Generate the rpart model
+
+trctrl <- trainControl(method="repeatedcv", number=10)
+
+model.rpart_low <- train(lowcost ~ smoker+exercise+married+education_level+location_type+married+yearly_physical, data = trainData_low,method = "rpart",trControl=trctrl,tuneLength = 50)
+
+#now to test the model using the test data
+#evaluating results using the confusion matrix and varIMP to understand importance
+
+rpartOut_low <- predict(model.rpart_low,newdata=testData_low)
+confusionMatrix(rpartOut_low,testData_low$lowcost)
+
+#using the varImp to understand which components are the most important to the model
+
+varImp(model.rpart_low)
+
+#now creating the partition tree using the rpart.plot
+
+library(rpart.plot)
+rpart.plot(model.rpart_low$finalModel)
+
+#below is not a good model because the p-value is 1
+#cannot trust the decision tree or the variables listed in order of importance
+
+
+
+```
+
+```{r}
+#now comparing model prediction to the solution file
+
+#RpartTest <- predict(model.rpart,Test_HMO)
+#RpartTest
+
+#HMO_solution$expensive
+
+#manually counted matches and divided by 20
+rpart_matches <- 10
+rpart_total <- 20
+rpart_accuracy <- rpart_matches/rpart_total
+rpart_accuracy 
+#50% accuracy compared with HMO test file
+
+
+```
+
+
+
+```{r}
+#running the SVM model
+
+library(caret)
+set.seed(110)
+trainList <- createDataPartition(y=file2$cost,p=.80,list=FALSE)
+#This creates the training dataset into a list using createdatapartition. 
+trainset <- file2[trainList, ]
+#This converts the list into a dataset called trainset. 
+testSet <- file2[-trainList, ]
+#This creates the testSet with the remaining data
+
+library(kernlab)
+set.seed(111)
+dim(trainData)
+dim(testData)
+
+svmFile1 <- ksvm(highcost ~ age+bmi+exercise+married+hypertension+education_level+smoker,data=trainData, C=1, cross=3, prob.model=TRUE)
+
+svmFile1
+
+svmfilepredict <- predict(svmFile1, newdata=testData, type="response")
+
+head(svmfilepredict)
+
+table(svmfilepredict,testData$highcost)
+
+sum(diag(table(svmfilepredict,testData$highcost)))/sum(table(svmfilepredict,testData$highcost))
+
+confusionMatrix(svmfilepredict,testData$highcost)
+
+
+
+
+
+```
+
+```{r}
+
+library(kernlab)
+set.seed(111)
+dim(trainset)
+dim(testSet)
+
+svmFile1 <- ksvm(highcost ~age+bmi+smoker+hypertension+exercise+yearly_physical+education_level,data=trainset, C=5, cross=3, prob.model=TRUE)
+svmFile1
+
+#svmFile2 <- ksvm(cost ~ age+bmi+smoker+hypertension,data=trainset, C=1, cross=3, prob.model=TRUE)
+# age+bmi+smoker+hypertension+exercise+yearly_physical+education_level
+#svmFile2
+
+svmfilepredict <- predict(svmFile1, newdata=testSet, type="response")
+
+confusionMatrix(svmfilepredict,testSet$highcost)
+
+head(svmfilepredict)
+
+
+```
+
+
+
+
+
+```{r}
+#SVMtest <- predict(svmFile1,Test_HMO)
+#SVMtest
+
+
+#HMO_solution$expensive
+
+#manually counted matches and divided by 20
+svm_matches <- 12
+svm_total <- 20
+svm_accuracy <- svm_matches/svm_total
+svm_accuracy 
+#60% accuracy compared with HMO test file
+
+```
+
+
+
+
+```{r}
+#wanted to visualize where the high costs are geographically located
+#first pass was to use all 50 states from the map data
+
+library(maps)
+library(ggplot2)
+
+states <- map_data("state")
+#assigning new data frame called states
+
+
+file1$location <- tolower(file1$location)
+#had to lower caase the states in file 2 to match formating of the states database
+dfNew <- merge(file1,states,all.x=TRUE,by.x="location",by.y="region")
+#merging dataframes by the location and region columns (i.e. state name)
+
+ggplot(states) +
+geom_polygon(color="black", fill="white",
+aes(x=long,y=lat, group=group))+ 
+  geom_point(data=dfNew,aes(x=long,y= lat,fill=cost)) + coord_map()
+#creating a map but includeing data, aethestics, and geometry
+#the above code will overlay the cost info via geom_point() on top of the US map
+#next, we wanted to change the map to only include the states of interest in our original data
+
+```
+
+```{r}
+
+#repeated all the steps above except we only included the statees of interest
+#question for abhijit - how to make the points show up in the middle of the state, not the outline
+#also ask about the coloring scale, visually show low versus high costs
+
+states2 <- map_data("county",c("pennsylvania","connecticut","rhode island","new jersey","massachusetts","new york","maryland"))
+ggplot(states2) + aes(long,lat, group=group) + geom_polygon(fill= "white", color = "black")
+
+file2$location <- tolower(file2$location)
+dfNew2 <- merge(file2,states,all.x=TRUE,by.x="location",by.y="region")
+
+
+ggplot(states2) +
+geom_polygon(color="black", fill="white",
+aes(x=long,y=lat, group=group)) +
+geom_point(data=dfNew2,aes(x=long,y= lat,color=cost )) + coord_map()
+#creating a map but includeing data, aethestics, and geometry
+#the above code will overlay the cost info via geom_point() on top of the US map
+#next, we wanted to change the map to only include the states of interest in our original data
+
+```
+
+
+
+```{r}
+
+library(maps)
+library(ggplot2)
+
+states <- map_data("state")
+#assigning new data frame called states
+
+
+file1$location <- tolower(file1$location)
+#had to lower caase the states in file 2 to match formating of the states database
+dfNew <- merge(file1,states,all.x=TRUE,by.x="location",by.y="region")
+#merging dataframes by the location and region columns (i.e. state name)
+
+file1$region <- tolower(file1$location)
+file2 <- file1 %>% filter(file1$cost<30000)
+us <- map_data("state")
+mapandfile <- merge(file2,us,by="region") 
+mapandfile <- mapandfile %>%  arrange(order)
+map2 <- ggplot(mapandfile, aes(map_id=location)) + aes(x=long, y=lat, group=group)+
+          geom_polygon(aes(fill=cost))+scale_fill_viridis_c(option="D")+
+          coord_fixed(ratio = 1.5) +
+          scale_y_continuous(expand = c(0,0))
+        map2
+
+
+
+```
+
+
