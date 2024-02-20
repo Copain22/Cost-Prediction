@@ -1,4 +1,3 @@
-# This project is to predict people who are spending more
 
 1. Make sure install R studio in your desktop.
 2. Open Project.r in your r studio
